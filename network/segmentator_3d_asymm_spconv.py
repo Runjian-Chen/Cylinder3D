@@ -283,8 +283,6 @@ class Asymm_3d_spconv(nn.Module):
     def forward(self, voxel_features, coors, batch_size):
         # x = x.contiguous()
         coors = coors.int()
-        # import pdb
-        # pdb.set_trace()
         ret = spconv.SparseConvTensor(voxel_features, coors, self.sparse_shape,
                                       batch_size)
         ret = self.downCntx(ret)

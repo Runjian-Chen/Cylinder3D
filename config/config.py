@@ -14,6 +14,9 @@ model_params = Map(
         "num_class": Int(),
         "num_input_features": Int(),
         "use_norm": Bool(),
+        "pcdet_unet": Bool(),
+        "pcdet_resnet": Bool(),
+
         "init_size": Int(),
     }
 )

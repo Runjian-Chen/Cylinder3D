@@ -52,7 +52,8 @@ def main(args):
     unique_label = np.asarray(sorted(list(SemKITTI_label_name.keys())))[1:] - 1
     unique_label_str = [SemKITTI_label_name[x] for x in unique_label + 1]
 
-    my_model = model_builder.build(model_config)
+    # my_model = model_builder.build(model_config)
+    my_model = model_builder.build(model_config, args.pretrained_unet)
     if os.path.exists(model_load_path):
         my_model = load_checkpoint(model_load_path, my_model)
 
@@ -61,11 +62,18 @@ def main(args):
 
     loss_func, lovasz_softmax = loss_builder.build(wce=True, lovasz=True,
                                                    num_class=num_class, ignore_label=ignore_label)
+    if model_config.get('pcdet_resnet', False):
+        grid_size_ = grid_size.copy()
+        grid_size_[0] = grid_size_[0] // 4 - 1
+        grid_size_[1] = grid_size_[1] // 4
+        grid_size_[2] = grid_size_[2] // 4
+    else:
+        grid_size_ = grid_size.copy()
 
     train_dataset_loader, val_dataset_loader = data_builder.build(dataset_config,
                                                                   train_dataloader_config,
                                                                   val_dataloader_config,
-                                                                  grid_size=grid_size)
+                                                                  grid_size=grid_size_)
 
     # training
     epoch = 0
@@ -80,7 +88,8 @@ def main(args):
         time.sleep(10)
         # lr_scheduler.step(epoch)
         for i_iter, (_, train_vox_label, train_grid, _, train_pt_fea) in enumerate(train_dataset_loader):
-            if global_iter % check_iter == 0 and epoch >= 1:
+
+            if global_iter % check_iter == 0 and epoch >= 10:
                 my_model.eval()
                 hist_list = []
                 val_loss_list = []
@@ -160,6 +169,15 @@ if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('-y', '--config_path', default='config/semantickitti.yaml')
+    parser.add_argument('--pretrained_unet', type=str, default=None, help='pretrained_model')
+
+    seed = 666
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
     args = parser.parse_args()
 
     print(' '.join(sys.argv))
